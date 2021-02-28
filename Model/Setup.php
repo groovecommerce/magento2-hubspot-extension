@@ -101,7 +101,17 @@ class Setup
         $integration = $this->integrationService->create([
             'name'          => $this->config->getIntegrationName($storeId),
             'endpoint'      => $this->config->getAuthUrl($storeId),
-            "all_resources" => 1
+            "resource" => [
+                "Magento_Catalog::catalog",
+                "Magento_Catalog::catalog_inventory",
+                "Magento_Catalog::products",
+                "Magento_PricePermissions::read_product_price",
+                "Magento_Sales::actions",
+                "Magento_Sales::actions_view",
+                "Magento_Sales::sales",
+                "Magento_Sales::sales_operation",
+                "Magento_Sales::sales_order",
+            ]
         ]);
         $this->token->createVerifierToken($integration->getConsumerId());
         $consumer = $this->oauthService->loadConsumer($integration->getConsumerId());
