@@ -91,4 +91,9 @@
         </arguments>
     </type>
     <preference for="Groove\Hubshoply\Api\ProductAttributeMediaGalleryManagementInterface" type="Groove\Hubshoply\Model\ProductAttributeMediaGalleryManagement" />
+    <type name="\Groove\Hubshoply\Model\AbandonedCart">
+        <arguments>
+            <argument name="cartRepository" xsi:type="object">\Magento\Quote\Api\CartRepositoryInterface\Proxy</argument>
+        </arguments>
+    </type>
 </config>

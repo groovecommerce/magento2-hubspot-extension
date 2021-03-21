@@ -39,17 +39,23 @@ class View extends AbstractQueue
     private $collectionFactory;
 
     /**
+     * @var \Groove\Hubshoply\Model\QueueItemManagement
+     */
+    private $queueItemManagement;
+
+    /**
      * View constructor.
      *
-     * @param Context               $context
-     * @param LoggerInterface       $logger
-     * @param TokenInterfaceFactory $tokenInterfaceFactory
-     * @param Config                $config
-     * @param StoreManager          $storeManager
-     * @param Error                 $error
-     * @param Json                  $json
-     * @param QueueViewProcessor    $queueViewProcessor
-     * @param CollectionFactory     $collectionFactory
+     * @param Context                                     $context
+     * @param LoggerInterface                             $logger
+     * @param TokenInterfaceFactory                       $tokenInterfaceFactory
+     * @param Config                                      $config
+     * @param StoreManager                                $storeManager
+     * @param Error                                       $error
+     * @param Json                                        $json
+     * @param QueueViewProcessor                          $queueViewProcessor
+     * @param CollectionFactory                           $collectionFactory
+     * @param \Groove\Hubshoply\Model\QueueItemManagement $queueItemManagement
      */
     public function __construct(
         Context $context,
@@ -60,12 +66,14 @@ class View extends AbstractQueue
         Error $error,
         Json $json,
         QueueViewProcessor $queueViewProcessor,
-        CollectionFactory $collectionFactory
+        CollectionFactory $collectionFactory,
+        \Groove\Hubshoply\Model\QueueItemManagement $queueItemManagement
     ) {
         parent::__construct($context, $logger, $tokenInterfaceFactory, $config, $storeManager, $error);
         $this->json = $json;
         $this->queueViewProcessor = $queueViewProcessor;
         $this->collectionFactory = $collectionFactory;
+        $this->queueItemManagement = $queueItemManagement;
     }
 
     /**
@@ -77,6 +85,7 @@ class View extends AbstractQueue
         /**
          * @var $collection Collection
          */
+        $this->queueItemManagement->queueCarts();
         $collection = $this->collectionFactory->create();
         $this->queueViewProcessor->process($request, $collection);
         $this->getResponse()
@@ -113,14 +122,25 @@ class View extends AbstractQueue
          * @var $item QueueItem
          */
         foreach ($collection as $item) {
-            $result[] = [
-                "queue_item_id" => $item->getQueueItemId(),
-                "event_entity"  => $item->getEventType(),
-                "event_type"    => $item->getEventEntity(),
-                "payload"       => $this->json->unserialize($item->getPayloadJson()),
-                "created_at"    => $item->getCreatedAt(),
-                "store_id"      => $item->getStoreId()
-            ];
+            try {
+                $payload = $this->json->unserialize($item->getPayloadJson());
+                $result[] = [
+                    "queue_item_id" => $item->getQueueItemId(),
+                    "event_entity"  => $item->getEventType(),
+                    "event_type"    => $item->getEventEntity(),
+                    "payload"       => $payload,
+                    "created_at"    => $item->getCreatedAt(),
+                    "store_id"      => $item->getStoreId()
+                ];
+            } catch (\Exception $e) {
+                $this->logger->error(
+                    sprintf(
+                        'Error during payload generation error: %s, payload: %s',
+                        $e->getMessage(),
+                        $item->getPayloadJson()
+                    )
+                );
+            }
         }
 
         return $result;

@@ -9,6 +9,8 @@ use Groove\Hubshoply\Model\ResourceModel\QueueItem as QueueItemResource;
 use Groove\Hubshoply\Model\ResourceModel\QueueItem\Collection;
 use Groove\Hubshoply\Model\ResourceModel\QueueItem\CollectionFactory;
 use Magento\Framework\Serialize\Serializer\Json;
+use Groove\Hubshoply\Model\ResourceModel\AbandonedCart\CollectionFactory as AbandonedCartCollectionFactory;
+use Groove\Hubshoply\Model\ResourceModel\AbandonedCart\Collection as AbandonedCartCollection;
 
 /**
  * Class QueueItemManagement
@@ -38,6 +40,11 @@ class QueueItemManagement implements QueueItemManagementInterface
     private $collectionFactory;
 
     /**
+     * @var AbandonedCartCollectionFactory
+     */
+    private $abandonedCartCollectionFactory;
+
+    /**
      * QueueItemManagement constructor.
      *
      * @param QueueItemResource $queueItemResource
@@ -49,12 +56,14 @@ class QueueItemManagement implements QueueItemManagementInterface
         QueueItemResource $queueItemResource,
         QueueItemFactory $queueItemFactory,
         Json $json,
-        CollectionFactory $collectionFactory
+        CollectionFactory $collectionFactory,
+        AbandonedCartCollectionFactory $abandonedCartCollectionFactory
     ) {
         $this->queueItemResource = $queueItemResource;
         $this->queueItemFactory = $queueItemFactory;
         $this->json = $json;
         $this->collectionFactory = $collectionFactory;
+        $this->abandonedCartCollectionFactory = $abandonedCartCollectionFactory;
     }
 
     /**
@@ -89,5 +98,35 @@ class QueueItemManagement implements QueueItemManagementInterface
         $collection = $this->collectionFactory->create();
         $collection->addFieldToFilter(QueueItem::FIELD_ID, ['from' => $from, 'to' => $to]);
         $collection->walk('delete');
+    }
+
+    /**
+     *
+     */
+    public function queueCarts()
+    {
+        /**
+         * @var $abandonedCartCollection AbandonedCartCollection
+         */
+        $abandonedCartCollection = $this->abandonedCartCollectionFactory->create();
+        $abandonedCartCollection->addFieldToFilter('enqueued', false);
+        $idsToUnEnQueue = [];
+        foreach ($abandonedCartCollection->getItems() as $abandonedCart) {
+            $payload = $abandonedCart->getPayload();
+            if (!$payload) {
+                continue;
+            }
+            $this->create(
+                'cart',
+                'abandoned',
+                $payload,
+                $abandonedCart->getStoreId()
+            );
+            $idsToUnEnQueue[] = $abandonedCart->getCartId();
+        }
+        if ($idsToUnEnQueue) {
+            $abandonedCartResource = $abandonedCartCollection->getResource();
+            $abandonedCartResource->unEnqueue($idsToUnEnQueue);
+        }
     }
 }

@@ -14,6 +14,9 @@ class Collection extends AbstractCollection
      */
     protected $_idFieldName = 'cart_id';
 
+    /**
+     *
+     */
     protected function _construct()
     {
         $this->_init(AbandonedCart::class, AbandonedCartResource::class);

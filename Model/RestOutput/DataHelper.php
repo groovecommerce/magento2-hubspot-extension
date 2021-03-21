@@ -5,6 +5,9 @@ namespace Groove\Hubshoply\Model\RestOutput;
 
 class DataHelper
 {
+    /**
+     * @param $data
+     */
     public function formatPricesRelatedData(&$data)
     {
         array_walk_recursive($data, function (&$item, $key) {

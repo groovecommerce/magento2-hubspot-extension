@@ -8,6 +8,12 @@ use Magento\Framework\App\RequestInterface;
 
 class QueueViewProcessor
 {
+    /**
+     * @param RequestInterface $request
+     * @param Collection       $collection
+     *
+     * @return Collection
+     */
     public function process(RequestInterface $request, Collection $collection): Collection
     {
         if ($request->getParam('first')) {
